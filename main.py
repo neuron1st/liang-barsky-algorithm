@@ -53,10 +53,10 @@ class ClippingWindow:
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         self.segments = []
-        self.clip_start_x = None
-        self.clip_start_y = None
-        self.clip_end_x = None
-        self.clip_end_y = None
+        self.start_x = None
+        self.start_y = None
+        self.end_x = None
+        self.end_y = None
         self.drawing_clip = False
 
         self.button_frame = tk.Frame(master)
@@ -76,17 +76,17 @@ class ClippingWindow:
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
 
     def toggle_segment(self):
-        self.clip_start_x = None
-        self.clip_start_y = None
-        self.clip_end_x = None
-        self.clip_end_y = None
+        self.start_x = None
+        self.start_y = None
+        self.end_x = None
+        self.end_y = None
         self.drawing_clip = False
 
     def toggle_clip(self):
-        self.clip_start_x = None
-        self.clip_start_y = None
-        self.clip_end_x = None
-        self.clip_end_y = None
+        self.start_x = None
+        self.start_y = None
+        self.end_x = None
+        self.end_y = None
         self.drawing_clip = True
 
     def clear_canvas(self):
@@ -95,37 +95,33 @@ class ClippingWindow:
 
     def on_click(self, event):
         if self.drawing_clip:
-            self.clip_start_x = event.x
-            self.clip_start_y = event.y
+            self.start_x = event.x
+            self.start_y = event.y
         else:
-            if self.clip_start_x is None and self.clip_start_y is None:
-                self.clip_start_x = event.x
-                self.clip_start_y = event.y
-            else:
-                end_x = event.x
-                end_y = event.y
-                self.canvas.create_line(self.clip_start_x, self.clip_start_y, end_x, end_y, fill='black', width=2)
-                self.segments.append(((self.clip_start_x, self.clip_start_y), (end_x, end_y)))
-                self.clip_start_x = None
-                self.clip_start_y = None
+            self.start_x = event.x
+            self.start_y = event.y
 
     def on_motion(self, event):
-        if self.drawing_clip:
-            if self.clip_start_x is not None and self.clip_start_y is not None:
-                self.canvas.delete("current_clip")
-                self.canvas.create_rectangle(self.clip_start_x, self.clip_start_y,
-                                             event.x, event.y,
-                                             outline='purple', width=2, tag="current_clip")
+        if self.drawing_clip and self.start_x is not None and self.start_y is not None:
+            self.canvas.delete("current_clip")
+            self.canvas.create_rectangle(self.start_x, self.start_y,
+                                         event.x, event.y,
+                                         outline='purple', width=2, tag="current_clip")
+        elif self.start_x is not None and self.start_y is not None:
+            self.canvas.delete("current_line")
+            self.canvas.create_line(self.start_x, self.start_y,
+                                    event.x, event.y,
+                                    fill='black', width=3, tag="current_line")
 
     def on_release(self, event):
         if self.drawing_clip:
-            self.clip_end_x = event.x
-            self.clip_end_y = event.y
+            self.end_x = event.x
+            self.end_y = event.y
 
-            clip_window = [(self.clip_start_x, self.clip_start_y),
-                           (self.clip_end_x, self.clip_start_y),
-                           (self.clip_end_x, self.clip_end_y),
-                           (self.clip_start_x, self.clip_end_y)]
+            clip_window = [(self.start_x, self.start_y),
+                           (self.end_x, self.start_y),
+                           (self.end_x, self.end_y),
+                           (self.start_x, self.end_y)]
             clip_window = sort_vertices_clockwise(clip_window)
             self.canvas.delete("clipped_segment")
 
@@ -135,6 +131,13 @@ class ClippingWindow:
                     self.canvas.create_line(clipped_segment[0][0], clipped_segment[0][1],
                                             clipped_segment[1][0], clipped_segment[1][1],
                                             fill='red', width=3, tag="clipped_segment")
+        else:
+            end_x = event.x
+            end_y = event.y
+            self.canvas.create_line(self.start_x, self.start_y, end_x, end_y, fill='black', width=2)
+            self.segments.append(((self.start_x, self.start_y), (end_x, end_y)))
+            self.start_x = None
+            self.start_y = None
 
 
 def main():
